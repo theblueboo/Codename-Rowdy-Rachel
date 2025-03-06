@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 using UnityEngine.InputSystem;
-using static UnityEditor.Timeline.TimelinePlaybackControls;
 
 public class PlayerMovement : MonoBehaviour
 {
@@ -34,7 +33,7 @@ public class PlayerMovement : MonoBehaviour
         }
         
         if (horizontal == 0)
-        { acceleration = 1.5f;
+        { acceleration = baseAcceleration;
           rb.velocity = new Vector2(0f, rb.velocity.y);
           isDashing = false;
         }
@@ -97,7 +96,7 @@ public class PlayerMovement : MonoBehaviour
 
     private void Flip()
     {
-        acceleration = 1.5f;
+        acceleration = baseAcceleration;
         isDashing = false;
         isFacingRight = !isFacingRight;
         Vector3 localScale = transform.localScale;
