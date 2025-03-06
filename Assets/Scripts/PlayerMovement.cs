@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using TMPro;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using static UnityEditor.Timeline.TimelinePlaybackControls;
@@ -16,32 +17,44 @@ public class PlayerMovement : MonoBehaviour
     private float jumpingPower = 8f;
     private bool isFacingRight = true;
     private float dashSpeed = 2.0f;
-    float accelleration = 4.0f;
+    float acceleration = 1.5f;
+    private const float baseAcceleration = 1.5f;
+
+    private bool isDashing = false;
+
+    private TextMeshProUGUI speedStats;
 
     IEnumerator SpeedIncrease()
     {
-        if (horizontal != 0 && accelleration > maxSpeed)
+        if (horizontal != 0 && acceleration < maxSpeed)
         {
-            accelleration = accelleration + 1;
+            acceleration++;
             yield return new WaitForSeconds(0.5f);
             StartCoroutine(SpeedIncrease());
         }
-        else if (horizontal == 0)
-        { accelleration = 1.5f;
+        
+        if (horizontal == 0)
+        { acceleration = 1.5f;
           rb.velocity = new Vector2(0f, rb.velocity.y);
+          isDashing = false;
         }
+    }
+
+    void Awake()
+    {
+        speedStats = GameObject.Find("SpeedStats").GetComponent<TextMeshProUGUI>();
     }
 
     // Update is called once per frame
     void Update()
     {
         
-        //speed = horizontal * accelleration;
+        speed = horizontal * acceleration;
 
-        //if (speed >= maxSpeed)
-        //{
-        //    speed = maxSpeed;
-        //}
+        if (speed >= maxSpeed)
+        {
+            speed = maxSpeed;
+        }
 
 
 
@@ -55,6 +68,11 @@ public class PlayerMovement : MonoBehaviour
         }
 
         rb.velocity = new Vector2(speed, rb.velocity.y);
+        if (speedStats != null)
+        {
+            speedStats.text = "Current Acceleration: " + acceleration + "\nCurrent Speed: " + speed + "\nCurrent MaxSpeed: " + maxSpeed + "\nHorizontal: " + horizontal;
+        }
+        
     }
 
     public void Jump(InputAction.CallbackContext context)
@@ -79,6 +97,8 @@ public class PlayerMovement : MonoBehaviour
 
     private void Flip()
     {
+        acceleration = 1.5f;
+        isDashing = false;
         isFacingRight = !isFacingRight;
         Vector3 localScale = transform.localScale;
         localScale.x *= -1f;
@@ -88,6 +108,7 @@ public class PlayerMovement : MonoBehaviour
     public void Move(InputAction.CallbackContext context)
     {
         //Define horizontal
+
 
         horizontal = context.ReadValue<Vector2>().x;
 
@@ -103,6 +124,12 @@ public class PlayerMovement : MonoBehaviour
         else if (context.canceled)
         {
             maxSpeed = maxSpeed / dashSpeed;
+        }
+
+        if (isDashing == false)
+        {
+            StartCoroutine(SpeedIncrease());
+            isDashing = true;
         }
     }
 
