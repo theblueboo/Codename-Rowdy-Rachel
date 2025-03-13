@@ -107,28 +107,24 @@ public class PlayerMovement : MonoBehaviour
     public void Move(InputAction.CallbackContext context)
     {
         //Define horizontal
-
-
-        horizontal = context.ReadValue<Vector2>().x;
-
-    }
-
-    public void Dash(InputAction.CallbackContext context)
-    {
         // Activates the increase in momentum 
-        if (context.performed)
-        {
-            maxSpeed= maxSpeed * dashSpeed;
-        }
-        else if (context.canceled)
-        {
-            maxSpeed = maxSpeed / dashSpeed;
-        }
-
         if (isDashing == false)
         {
             StartCoroutine(SpeedIncrease());
             isDashing = true;
+        }
+
+        horizontal = context.ReadValue<Vector2>().x;
+        
+    }
+
+    public void Dash(InputAction.CallbackContext context)
+    {
+
+        maxSpeed = 8f;
+        if (context.canceled)
+        {
+            maxSpeed = 4f;
         }
     }
 
