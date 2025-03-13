@@ -23,13 +23,13 @@ public class PlayerMovement : MonoBehaviour
 
     private TextMeshProUGUI speedStats;
 
-    IEnumerator SpeedIncrease()
+    IEnumerator AccelerationIncrease()
     {
         if (horizontal != 0 && acceleration < maxSpeed)
         {
             acceleration++;
             yield return new WaitForSeconds(0.5f);
-            StartCoroutine(SpeedIncrease());
+            StartCoroutine(AccelerationIncrease());
         }
         
         if (horizontal == 0)
@@ -110,7 +110,7 @@ public class PlayerMovement : MonoBehaviour
         // Activates the increase in momentum 
         if (isDashing == false)
         {
-            StartCoroutine(SpeedIncrease());
+            StartCoroutine(AccelerationIncrease());
             isDashing = true;
         }
 
