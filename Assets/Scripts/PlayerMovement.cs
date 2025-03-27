@@ -6,6 +6,11 @@ using UnityEngine.InputSystem;
 
 public class PlayerMovement : MonoBehaviour
 {
+    /* TO DO:
+    Make sure Rachel doesn't run faster when moving right (only happens with decimal values for some reason)
+    Make sure Rachel can Build momentum from a standstill instead of having to loosen the Accel Increase
+    Slow Rachel Down once they activate a dash but then let go of the dash button during movement*/
+
     public Rigidbody2D rb;
     public Transform groundCheck;
     public LayerMask groundLayer;
