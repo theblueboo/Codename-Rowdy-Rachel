@@ -3,111 +3,123 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using static UnityEditor.Timeline.TimelinePlaybackControls;
-
 public class PlayerMovement : MonoBehaviour
 {
-    public Rigidbody2D rb;
-    public Transform groundCheck;
-    public LayerMask groundLayer;
+    [Header("References")]
+    public PlayerMovementStats RachelStats;
+    [SerializeField] private Collider2D _feetColl;
+    [SerializeField] private Collider2D _bodyColl;
 
-    private float horizontal;
-    private float speed;
-    private float maxSpeed = 4f;
-    private float jumpingPower = 8f;
-    private bool isFacingRight = true;
-    private float dashSpeed = 2.0f;
-    float accelleration = 4.0f;
+    private Rigidbody2D _rb;
 
-    IEnumerator SpeedIncrease()
+    //Movement variables
+    private Vector2 _movementVelocity;
+    private Vector2 _movementSpeed;
+    private bool _isFacingRight;
+
+    //Collision Check Variables
+    private RaycastHit2D _groundhit;
+    private RaycastHit2D _headhit;
+    private bool _isGrounded;
+    private bool _squishedHead;
+    private bool _squishedBody;
+
+    private void Awake()
     {
-        if (horizontal != 0 && accelleration > maxSpeed)
+        _isFacingRight = true;
+
+        _rb = GetComponent<Rigidbody2D>();
+    }
+
+    #region Movement
+
+    private void Move(float acceleration, float deceleration, Vector2 moveInput)
+    {
+        if (moveInput != Vector2.zero)
         {
-            accelleration = accelleration + 1;
-            yield return new WaitForSeconds(0.5f);
-            StartCoroutine(SpeedIncrease());
+            TurnCheck(moveInput);
+
+            Vector2 targetVelocity = Vector2.zero;
+            if(InputManager.RunIsHeld)
+            {
+                targetVelocity = new Vector2(moveInput.x, 0f) * RachelStats.MaxRunSpeed;
+            }
+            else { targetVelocity = new Vector2(moveInput.x, 0f) * RachelStats.MaxWalkSpeed; }
+
+            _movementVelocity = Vector2.Lerp(_movementVelocity, targetVelocity, acceleration * Time.fixedDeltaTime);
+            _rb.velocity = new Vector2(_movementVelocity.x, _rb.velocity.y);
         }
-        else if (horizontal == 0)
-        { accelleration = 1.5f;
-          rb.velocity = new Vector2(0f, rb.velocity.y);
+
+        else if ( moveInput == Vector2.zero)
+        {
+            _movementVelocity = Vector2.Lerp(_movementVelocity, Vector2.zero, deceleration * Time.fixedDeltaTime);
+            _rb.velocity = new Vector2(_movementVelocity.x, _rb.velocity.y);
         }
     }
 
-    // Update is called once per frame
-    void Update()
+    private void TurnCheck(Vector2 moveInput)
     {
-        
-        //speed = horizontal * accelleration;
+        if (_isFacingRight && moveInput.x <0)
+        {
+            Turn(false);
+        }
 
-        //if (speed >= maxSpeed)
+        else if (!_isFacingRight && moveInput.x > 0) 
+        {
+            Turn(true);
+        }
+    }
+
+    private void Turn(bool turnRight)
+    {
+        if (turnRight)
+        {
+            _isFacingRight = true;
+            transform.Rotate(0f, 180f, 0f);
+        }
+        else
+        {
+            _isFacingRight = false;
+            transform.Rotate(0f,-180f,0f);
+        }
+    }
+
+    #endregion
+
+    #region Collision
+
+    private void IsGrounded()
+    {
+        Vector2 boxCastOrigin = new Vector2(_feetColl.bounds.center.x, _feetColl.bounds.min.y);
+        Vector2 boxCastSize = new Vector2(_feetColl.bounds.center.x, RachelStats.GroundDetectionRayLength); ;
+
+        _groundhit = Physics2D.BoxCast(boxCastOrigin, boxCastSize,0f,Vector2.down,RachelStats.GroundDetectionRayLength,RachelStats.GroundLayer);
+        if (_groundhit.collider != null )
+        {
+            _isGrounded = true;
+        }
+        else { _isGrounded = false; }
+
+        #region Collision Debug Visuals
+
+        //if (RachelStats.DebugShowIsGroundedBox)
         //{
-        //    speed = maxSpeed;
-        //}
+        //    Color rayColor;
+        //    if (_isGrounded)
+        //    {
+        //        rayColor = Color.green;
+        //    }
+        //    else { rayColor = Color.red;}
+
+        //    Debug.DrawRay(new Vector2(boxCastOrigin.x - boxCastSize.x / 2, boxCastOrigin.y), Vector2.down * RachelStats.GroundDetectionRayLength, rayColor);
 
 
-
-        if (!isFacingRight && horizontal > 0f )
-        {
-            Flip();
-        }
-        else if (isFacingRight && horizontal < 0f)
-        {
-            Flip();
-        }
-
-        rb.velocity = new Vector2(speed, rb.velocity.y);
+        #endregion
     }
 
-    public void Jump(InputAction.CallbackContext context)
-    {
-        if ( context.performed && IsGrounded())
-        {
-            rb.velocity = new Vector2(rb.velocity.x, jumpingPower);
-        }
-
-        if (context.canceled && rb.velocity.y > 0f)
-        {
-            rb.velocity = new Vector2(rb.velocity.x, rb.velocity.y * 0.5f);
-        }
-
-
-    }
-
-    private bool IsGrounded()
-    {
-        return Physics2D.OverlapCircle(groundCheck.position,0.2f, groundLayer);
-    }
-
-    private void Flip()
-    {
-        isFacingRight = !isFacingRight;
-        Vector3 localScale = transform.localScale;
-        localScale.x *= -1f;
-        transform.localScale = localScale;
-    }
-
-    public void Move(InputAction.CallbackContext context)
-    {
-        //Define horizontal
-
-        horizontal = context.ReadValue<Vector2>().x;
-
-    }
-
-    public void Dash(InputAction.CallbackContext context)
-    {
-        // Activates the increase in momentum 
-        if (context.performed)
-        {
-            maxSpeed= maxSpeed * dashSpeed;
-        }
-        else if (context.canceled)
-        {
-            maxSpeed = maxSpeed / dashSpeed;
-        }
-    }
-
-    public void Attack(InputAction.CallbackContext context)
+    private void CollisionCheck()
     {
 
     }
+    #endregion
 }
